@@ -97,23 +97,24 @@ class LSTMDataset(Dataset):
         return ppg_seq.view(self.seq_length, 1), valid_sbp, valid_dbp  # [seq_length, 1]
 
 class DoubleLSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, output_size, seq_length):
+    def __init__(self, input_size, hidden_size1, hidden_size2, num_layers, output_size, seq_length):
         super(DoubleLSTM, self).__init__()
-        self.hidden_size = hidden_size
+        self.hidden_size1 = hidden_size1
+        self.hidden_size2 = hidden_size2
         self.num_layers = num_layers
         self.seq_length = seq_length
         # nn.LSTM, pytorch의 내장 클래스
-        self.lstm1 = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.lstm2 = nn.LSTM(hidden_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size * seq_length, output_size)
+        self.lstm1 = nn.LSTM(input_size, hidden_size1, num_layers, batch_first=True)
+        self.lstm2 = nn.LSTM(hidden_size1, hidden_size2, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size2 * seq_length, output_size)
 
     def forward(self, x):
-        h0_1 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
-        c0_1 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+        h0_1 = torch.zeros(self.num_layers, x.size(0), self.hidden_size1)
+        c0_1 = torch.zeros(self.num_layers, x.size(0), self.hidden_size1)
         out1, _ = self.lstm1(x, (h0_1, c0_1))
 
-        h0_2 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
-        c0_2 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+        h0_2 = torch.zeros(self.num_layers, x.size(0), self.hidden_size2)
+        c0_2 = torch.zeros(self.num_layers, x.size(0), self.hidden_size2)
         out2, _ = self.lstm2(out1, (h0_2, c0_2))
         out = out2.contiguous().view(x.size(0), -1)  # Flatten LSTM output
         out = self.fc(out)
@@ -202,7 +203,7 @@ train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 # 모델 설정
-model = DoubleLSTM(input_size=1, hidden_size=64, num_layers=3, output_size=2, seq_length=seq_length)
+model = DoubleLSTM(input_size=1, hidden_size1=32, hidden_size2=32, num_layers=3, output_size=2, seq_length=seq_length)
 learning_rate = 0.001
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 epochs = 30
@@ -223,3 +224,13 @@ plt.legend()
 plt.show()
 
 test_loss = test(model, test_dataloader, loss_function)
+
+torch.save(model.state_dict(), 'final_model.pth')
+print("Model saved as 'final_model.pth'")
+
+# Later, to load the model for inference
+# Load the model
+model = DoubleLSTM(input_size=1, hidden_size1=32, hidden_size2=32, num_layers=3, output_size=2, seq_length=seq_length)
+model.load_state_dict(torch.load('final_model.pth'))
+model.eval()  # Set the model to evaluation mode
+print("Model loaded from 'final_model.pth'")
