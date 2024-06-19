@@ -103,7 +103,7 @@ class DoubleLSTM(nn.Module):
         self.hidden_size2 = hidden_size2
         self.num_layers = num_layers
         self.seq_length = seq_length
-        # nn.LSTM, pytorch의 내장 클래스
+
         self.lstm1 = nn.LSTM(input_size, hidden_size1, num_layers, batch_first=True)
         self.lstm2 = nn.LSTM(hidden_size1, hidden_size2, num_layers, batch_first=True)
         self.fc = nn.Linear(hidden_size2 * seq_length, output_size)
@@ -225,12 +225,11 @@ plt.show()
 
 test_loss = test(model, test_dataloader, loss_function)
 
-torch.save(model.state_dict(), 'final_model.pth')
-print("Model saved as 'final_model.pth'")
+torch.save(model.state_dict(), 'bp_double_lstm_final_model.pth')
+print("Model saved as 'bp_double_lstm_final_model.pth'")
 
-# Later, to load the model for inference
 # Load the model
 model = DoubleLSTM(input_size=1, hidden_size1=32, hidden_size2=32, num_layers=3, output_size=2, seq_length=seq_length)
-model.load_state_dict(torch.load('final_model.pth'))
+model.load_state_dict(torch.load('bp_double_lstm_final_model.pth'))
 model.eval()  # Set the model to evaluation mode
-print("Model loaded from 'final_model.pth'")
+print("Model loaded from 'bp_double_lstm_final_model.pth'")
