@@ -52,6 +52,29 @@ class LSTMDataset(Dataset):
 
         return filtered_ppgs
 
+    def validate_date(self, SBP, DBP):
+        NN = [1 / (x / 125) for x in np.diff(np.where(SBP > 0)[0])]
+        HR = 60 / np.mean(NN)
+        RR_min = 0.3
+        RR_max = 1.4
+        SBP_min = 40
+        SBP_max = 200
+        DBP_min = 40
+        DBP_max = 120
+
+        if HR < 50 or HR > 140:
+            return False
+
+        # Check if RR interval is in the range of 0.3 to 1.4 seconds
+        if any(np.diff(np.where(SBP > 0)[0]) / 125 < RR_min) or any(np.diff(np.where(SBP > 0)[0]) / 125 > RR_max):
+            return False
+
+        # Check if SBP and DBP values are within reasonable ranges
+        if any(SBP < SBP_min) or any(SBP > SBP_max) or any(DBP < DBP_min) or any(DBP > DBP_max):
+            return False
+
+        return True
+        
     def validate_and_replace(self, SBP, DBP):
         SBP_min = 40
         SBP_max = 200
